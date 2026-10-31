@@ -1,5 +1,4 @@
 package umg.edu.gt.controlgastos
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -49,11 +48,17 @@ class MainActivity : ComponentActivity() {
         val reporteHelper = ReporteHelper(this)
 
         setContent {
-            ControlGastosTheme {
+            // Estado global del modo oscuro controlado por el botón de la luna
+            var esModoOscuro by remember { mutableStateOf(false) }
+
+            ControlGastosTheme(darkTheme = esModoOscuro) {
                 val context = LocalContext.current
 
-                // Paleta de Colores
-                val fondoGeneral = Color(0xFFF3F4F6)
+                // Colores dinámicos según el modo oscuro o claro
+                val fondoGeneral = if (esModoOscuro) Color(0xFF121212) else Color(0xFFF3F4F6)
+                val tarjetaFondo = if (esModoOscuro) Color(0xFF1E1E1E) else Color(0xFFFFFFFF)
+                val textoPrincipal = if (esModoOscuro) Color(0xFFFFFFFF) else Color(0xFF1F2937)
+
                 val azulPrimario = Color(0xFF1E3A8A)
                 val azulAcento = Color(0xFF2563EB)
                 val verdeExito = Color(0xFF059669)
@@ -120,7 +125,7 @@ class MainActivity : ComponentActivity() {
                 // Formulario
                 var descripcionInput by remember { mutableStateOf("") }
                 var montoInput by remember { mutableStateOf("") }
-                var esIngreso by remember { mutableStateOf(false) } // false = Gasto, true = Ingreso
+                var esIngreso by remember { mutableStateOf(false) }
                 var esEnDolares by remember { mutableStateOf(false) }
                 var mensajeError by remember { mutableStateOf<String?>(null) }
                 var mostrarDialogoLimpiar by remember { mutableStateOf(false) }
@@ -136,23 +141,42 @@ class MainActivity : ComponentActivity() {
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // ENCABEZADO
-                        Text(
-                            text = "SmartWallet Pro 💡",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = azulPrimario
-                        )
+                        //ENCABEZADO
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Botón Modo Oscuro / Claro rápido (Luna / Sol)
+                            IconButton(
+                                onClick = { esModoOscuro = !esModoOscuro }
+                            ) {
+                                Text(if (esModoOscuro) "🌙" else "☀️", fontSize = 20.sp)
+                            }
 
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = estadoRedLabel,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF4B5563)
-                        )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "SmartWallet Pro 💡",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = azulPrimario
+                                )
+                                Text(
+                                    text = estadoRedLabel,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF9CA3AF)
+                                )
+                            }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                            // Espaciador invisible para equilibrar el diseño donde estaba el engranaje
+                            Spacer(modifier = Modifier.width(48.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         // PANEL DE TRES TARJETAS
                         Row(
@@ -171,7 +195,7 @@ class MainActivity : ComponentActivity() {
 
                             Card(
                                 modifier = Modifier.weight(1f),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F2FE))
+                                colors = CardDefaults.cardColors(containerColor = if (esModoOscuro) Color(0xFF064E3B) else Color(0xFFE0F2FE))
                             ) {
                                 Column(modifier = Modifier.padding(10.dp)) {
                                     Text("INGRESOS", fontSize = 10.sp, color = verdeExito, fontWeight = FontWeight.Bold)
@@ -181,7 +205,7 @@ class MainActivity : ComponentActivity() {
 
                             Card(
                                 modifier = Modifier.weight(1f),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFEE2E2))
+                                colors = CardDefaults.cardColors(containerColor = if (esModoOscuro) Color(0xFF7F1D1D) else Color(0xFFFEE2E2))
                             ) {
                                 Column(modifier = Modifier.padding(10.dp)) {
                                     Text("GASTOS", fontSize = 10.sp, color = rojoCritico, fontWeight = FontWeight.Bold)
@@ -192,7 +216,7 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // MEJORA 1: BARRA DE PROGRESO DE CONSUMO DEL PRESUPUESTO
+                        // BARRA DE PROGRESO
                         val porcentajeGastado = if (totalIngresosQ > 0) (totalGastosQ / totalIngresosQ).toFloat() else 0f
                         val colorBarra = when {
                             porcentajeGastado >= 0.9f -> rojoCritico
@@ -205,7 +229,7 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Uso del Ingreso Total", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4B5563))
+                                Text("Uso del Ingreso Total", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = textoPrincipal)
                                 Text("${(porcentajeGastado * 100).toInt()}%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorBarra)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
@@ -213,7 +237,7 @@ class MainActivity : ComponentActivity() {
                                 progress = { porcentajeGastado.coerceIn(0f, 1f) },
                                 modifier = Modifier.fillMaxWidth().height(8.dp),
                                 color = colorBarra,
-                                trackColor = Color(0xFFE5E7EB),
+                                trackColor = if (esModoOscuro) Color(0xFF374151) else Color(0xFFE5E7EB),
                                 strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                             )
                         }
@@ -225,7 +249,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                            colors = CardDefaults.cardColors(containerColor = tarjetaFondo)
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Text(
@@ -257,7 +281,6 @@ class MainActivity : ComponentActivity() {
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                // BOTONES GASTO / INGRESO
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -270,8 +293,8 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (!esIngreso) rojoCritico else Color(0xFFE5E7EB),
-                                            contentColor = if (!esIngreso) Color.White else Color.Black
+                                            containerColor = if (!esIngreso) rojoCritico else Color(0xFF374151),
+                                            contentColor = Color.White
                                         )
                                     ) {
                                         Text("GASTO", fontWeight = FontWeight.Bold)
@@ -285,8 +308,8 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (esIngreso) verdeExito else Color(0xFFE5E7EB),
-                                            contentColor = if (esIngreso) Color.White else Color.Black
+                                            containerColor = if (esIngreso) verdeExito else Color(0xFF374151),
+                                            contentColor = Color.White
                                         )
                                     ) {
                                         Text("INGRESO", fontWeight = FontWeight.Bold)
@@ -295,14 +318,13 @@ class MainActivity : ComponentActivity() {
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                // MEJORA 2: MENÚ DESPLEGABLE DE CATEGORÍAS (DROPDOWN)
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     OutlinedButton(
                                         onClick = { menuCategoriaExpandido = true },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
-                                        Text("Categoría: $categoriaSeleccionada", color = Color(0xFF374151), fontWeight = FontWeight.SemiBold)
+                                        Text("Categoría: $categoriaSeleccionada", color = textoPrincipal, fontWeight = FontWeight.SemiBold)
                                     }
                                     DropdownMenu(
                                         expanded = menuCategoriaExpandido,
@@ -323,7 +345,6 @@ class MainActivity : ComponentActivity() {
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                // CONVERSIÓN DE MONEDA
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.fillMaxWidth()
@@ -332,7 +353,7 @@ class MainActivity : ComponentActivity() {
                                         text = if (esEnDolares) "Moneda: Dólares ($)" else "Moneda: Quetzales (Q)",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF374151)
+                                        color = textoPrincipal
                                     )
                                     Spacer(modifier = Modifier.weight(1f))
                                     Switch(
@@ -346,7 +367,7 @@ class MainActivity : ComponentActivity() {
                                     Text(
                                         text = "Tasa aplicada: 1 USD = Q${String.format(Locale.US, "%.4f", tasaCambioUsd)}",
                                         fontSize = 10.sp,
-                                        color = Color(0xFF6B7280)
+                                        color = Color(0xFF9CA3AF)
                                     )
                                 }
 
@@ -403,7 +424,7 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // ENCABEZADO DE HISTORIAL Y EXPORTACIÓN
+                        // ENCABEZADO DE HISTORIAL
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -436,7 +457,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // MEJORA 3: FILTROS RÁPIDOS DE HISTORIAL (TODOS / INGRESOS / GASTOS)
+                        // FILTROS RÁPIDOS
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -452,7 +473,7 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        // LISTA DE REGISTROS FILTRADOS
+                        // LISTA DE REGISTROS
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -464,7 +485,7 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                    colors = CardDefaults.cardColors(containerColor = tarjetaFondo)
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -478,12 +499,12 @@ class MainActivity : ComponentActivity() {
                                                 text = gasto.titulo,
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 15.sp,
-                                                color = Color(0xFF1F2937)
+                                                color = textoPrincipal
                                             )
                                             Text(
-                                                text = "${gasto.tipo} • ${gasto.categoria} • ${formatearFecha(gasto.fechaMillis)}",
+                                                text = "${gasto.tipo} - ${gasto.categoria}\n${formatearFecha(gasto.fechaMillis)}",
                                                 fontSize = 11.sp,
-                                                color = Color(0xFF6B7280)
+                                                color = Color(0xFF9CA3AF)
                                             )
                                         }
                                         Text(
@@ -497,12 +518,12 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // DIÁLOGO DE ELIMINAR DATOS
+                        // DIÁLOGO DE CONFIRMACIÓN PARA LIMPIAR REGISTROS
                         if (mostrarDialogoLimpiar) {
                             AlertDialog(
                                 onDismissRequest = { mostrarDialogoLimpiar = false },
-                                title = { Text("¿Eliminar todos los datos?", fontWeight = FontWeight.Bold) },
-                                text = { Text("Esta acción borrará todo el historial guardado en SQLite de manera permanente.") },
+                                title = { Text("⚠️ ¿Borrar todo el historial?", fontWeight = FontWeight.Bold) },
+                                text = { Text("Esta acción eliminará permanentemente todos tus ingresos y gastos registrados.") },
                                 confirmButton = {
                                     Button(
                                         onClick = {
@@ -512,9 +533,9 @@ class MainActivity : ComponentActivity() {
                                             listaActualizada = dbHelper.obtenerGastos()
                                             mostrarDialogoLimpiar = false
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = rojoCritico)
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
                                     ) {
-                                        Text("Eliminar Todo")
+                                        Text("Sí, borrar todo", color = Color.White)
                                     }
                                 },
                                 dismissButton = {

@@ -95,6 +95,10 @@ class GastoDbHelper(context: Context) : SQLiteOpenHelper(context, "gastos_pro.db
     // Elimina todos los registros
     fun eliminarTodosLosGastos() {
         val db = writableDatabase
-        db.execSQL("DELETE FROM gastos_tabla")
+        try {
+            db.delete("gastos_tabla", null, null)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
